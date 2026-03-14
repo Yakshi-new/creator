@@ -1,0 +1,13 @@
+node_modules/
+.env
+*.log
+dist/
+build/
+.env.example
+
+
+#  git remote set-url origin https://github.com/techThif/fleet-pro-app.git
+
+#  git remote set-url origin https://github.com/techThif/CodeLearn.git
+#  git remote set-url origin https://github.com/techThif/CodeLearn.git
+#  https://github.com/techThif/QR-review.git

@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+//////////////////////////////////////////////////////
+// USER
+//////////////////////////////////////////////////////
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String?
+  role       UserRole @default(FAN)
+  isVerified Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  creatorProfile Creator?
+
+  postsLiked Like[]
+  comments   Comment[]
+
+  sentMessages     Message[] @relation("sentMessages")
+  receivedMessages Message[] @relation("receivedMessages")
+
+  subscriptions Subscription[] @relation("fanSubscriptions")
+
+  tipsSent Tip[] @relation("fanTips")
+
+  wallet Wallet?
+
+  notifications Notification[]
+
+  followers Follow[] @relation("followers")
+  following Follow[] @relation("following")
+
+  payments Payment[] // 👈 ADD THIS LINE
+}
+
+//////////////////////////////////////////////////////
+// CREATOR PROFILE
+//////////////////////////////////////////////////////
+
+model Creator {
+  id                Int     @id @default(autoincrement())
+  userId            Int     @unique
+  bio               String?
+  avatar            String?
+  coverImage        String?
+  subscriptionPrice Float   @default(4.99)
+  isKycVerified     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  posts       Post[]
+  subscribers Subscription[]
+  tips        Tip[]
+}
+
+//////////////////////////////////////////////////////
+// POSTS
+//////////////////////////////////////////////////////
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  creatorId Int
+  content   String?
+  type      PostType @default(SUBSCRIBER)
+  price     Float?
+  published Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  media    Media[]
+  likes    Like[]
+  comments Comment[]
+}
+
+//////////////////////////////////////////////////////
+// MEDIA
+//////////////////////////////////////////////////////
+
+model Media {
+  id        Int  @id @default(autoincrement())
+  postId    Int?
+  messageId Int?
+
+  url  String
+  type String
+
+  blurHash String?
+
+  createdAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+
+  post    Post?    @relation(fields: [postId], references: [id])
+  message Message? @relation(fields: [messageId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// LIKES
+//////////////////////////////////////////////////////
+
+model Like {
+  id     Int @id @default(autoincrement())
+  userId Int
+  postId Int
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+//////////////////////////////////////////////////////
+// COMMENTS
+//////////////////////////////////////////////////////
+
+model Comment {
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  postId  Int
+  content String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// SUBSCRIPTIONS
+//////////////////////////////////////////////////////
+
+model Subscription {
+  id        Int @id @default(autoincrement())
+  fanId     Int
+  creatorId Int
+
+  status String @default("active")
+
+  currentPeriodEnd DateTime
+
+  createdAt DateTime @default(now())
+
+  fan     User    @relation("fanSubscriptions", fields: [fanId], references: [id])
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  @@unique([fanId, creatorId])
+}
+
+//////////////////////////////////////////////////////
+// TIPS
+//////////////////////////////////////////////////////
+
+model Tip {
+  id        Int @id @default(autoincrement())
+  fanId     Int
+  creatorId Int
+
+  amount  Float
+  message String?
+
+  createdAt DateTime @default(now())
+
+  fan     User    @relation("fanTips", fields: [fanId], references: [id])
+  creator Creator @relation(fields: [creatorId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// DIRECT MESSAGES
+//////////////////////////////////////////////////////
+
+model Message {
+  id         Int @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+
+  content String?
+
+  isPaid     Boolean @default(false)
+  price      Float?
+  isUnlocked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  sender   User @relation("sentMessages", fields: [senderId], references: [id])
+  receiver User @relation("receivedMessages", fields: [receiverId], references: [id])
+
+  media Media[]
+}
+
+//////////////////////////////////////////////////////
+// PAYMENTS
+//////////////////////////////////////////////////////
+
+model Payment {
+  id     Int @id @default(autoincrement())
+  userId Int
+
+  amount         Float
+  platformFee    Float         @default(0)
+  creatorAmount  Float         @default(0)
+
+  type   PaymentType
+  status PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  // Optional link to specific content/subscription
+  creatorId Int?
+}
+
+//////////////////////////////////////////////////////
+// WALLET
+//////////////////////////////////////////////////////
+
+model Wallet {
+  id     Int @id @default(autoincrement())
+  userId Int @unique
+
+  balance Float @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// NOTIFICATIONS
+//////////////////////////////////////////////////////
+
+model Notification {
+  id     Int @id @default(autoincrement())
+  userId Int
+
+  type    String
+  title   String
+  content String?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// FOLLOW SYSTEM
+//////////////////////////////////////////////////////
+
+model Follow {
+  id Int @id @default(autoincrement())
+
+  followerId  Int
+  followingId Int
+
+  follower  User @relation("followers", fields: [followerId], references: [id])
+  following User @relation("following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+//////////////////////////////////////////////////////
+// SETTINGS
+//////////////////////////////////////////////////////
+
+model GlobalSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum UserRole {
+  FAN
+  CREATOR
+  ADMIN
+}
+
+enum PostType {
+  PUBLIC
+  SUBSCRIBER
+  PAID
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  TIP
+  PAID_POST
+  WALLET_DEPOSIT
+}
