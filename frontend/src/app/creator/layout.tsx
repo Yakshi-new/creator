@@ -1,7 +1,8 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import Sidebar from '@/components/Sidebar';
+import Sidebar from '../../components/Sidebar';
+import MobileNav from '../../components/MobileNav';
 
 export default function CreatorLayout({ children }: { children: ReactNode }) {
 
@@ -17,15 +18,20 @@ export default function CreatorLayout({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex h-screen bg-black">
+            {/* Desktop Sidebar */}
+            <div className="hidden md:block shrink-0">
+                <Sidebar role="CREATOR" />
+            </div>
 
-            {/* Left Sidebar */}
-            <Sidebar role="CREATOR" />
-
-            {/* Main Page Content */}
-            <main className="flex-1 overflow-y-auto">
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 {children}
             </main>
 
+            {/* Mobile Bottom Nav */}
+            <div className="md:hidden">
+                <MobileNav role="CREATOR" />
+            </div>
         </div>
     );
 }

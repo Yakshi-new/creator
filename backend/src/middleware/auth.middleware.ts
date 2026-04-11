@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 interface AuthRequest extends Request {
     user?: {
-        userId: number;
+        userId: string;
         role: string;
     };
 }
@@ -17,11 +17,11 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'access_secret') as { userId: number; role: string };
+        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'access_secret') as { userId: string; role: string };
         req.user = decoded;
         next();
     } catch (err) {
-        return res.status(403).json({ message: 'Invalid or expired access token' });
+        return res.status(401).json({ message: 'Invalid or expired access token' });
     }
 };
 

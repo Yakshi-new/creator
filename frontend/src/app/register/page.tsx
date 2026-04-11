@@ -18,18 +18,40 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [ageVerification, setAgeVerification] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
+        if (!ageVerification || !termsAccepted) {
+            setError('Please verify your age and accept the terms.');
+            setLoading(false);
+            return;
+        }
+
         try {
+            // 1. Register
             await api.post('/auth/register', { email, password, name, role: 'FAN' });
+            
+            // 2. Auto-login
+            const loginRes = await api.post('/auth/login', { email, password });
+            const data = loginRes.data as any;
+            
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('user', JSON.stringify({ 
+                name: data.user.name, 
+                email: data.user.email, 
+                role: data.user.role 
+            }));
+            window.dispatchEvent(new Event('storage'));
+
             setSuccess(true);
             setTimeout(() => {
-                router.push('/login');
-            }, 2000);
+                router.push('/fan/feed');
+            }, 1000);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Something went wrong');
         } finally {
@@ -113,6 +135,32 @@ export default function RegisterPage() {
                             placeholder="Min. 8 characters"
                             required
                         />
+                    </div>
+
+                    <div className="space-y-4 pt-2">
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                checked={ageVerification}
+                                onChange={(e) => setAgeVerification(e.target.checked)}
+                                className="mt-1 w-5 h-5 rounded-lg border-white/10 bg-black text-rose-500 focus:ring-rose-500 transition-all cursor-pointer"
+                            />
+                            <span className="text-sm text-neutral-400 group-hover:text-neutral-300 transition-colors font-medium">
+                                I am 18 years of age or older.
+                            </span>
+                        </label>
+
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="mt-1 w-5 h-5 rounded-lg border-white/10 bg-black text-rose-500 focus:ring-rose-500 transition-all cursor-pointer"
+                            />
+                            <span className="text-sm text-neutral-400 group-hover:text-neutral-300 transition-colors font-medium leading-relaxed">
+                                I have read and agree to the <Link href="/terms" className="text-rose-500 hover:underline">Terms of Service</Link>, <Link href="/privacy" className="text-rose-500 hover:underline">Privacy Policy</Link>, and <Link href="/content-policy" className="text-rose-500 hover:underline">Content Policy</Link>.
+                            </span>
+                        </label>
                     </div>
 
                     <button

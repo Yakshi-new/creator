@@ -121,15 +121,12 @@ export default function FanFeed() {
     }, []);
 
     return (
-        <div className="flex h-screen bg-black">
-
-
-            <main className="flex-1 overflow-y-auto">
-                <div className="max-w-3xl mx-auto py-10 px-6">
+        <div className="min-h-screen bg-black">
+            <div className="max-w-2xl mx-auto py-6 px-4">
                     {/* Top Bar */}
-                    <div className="flex items-center gap-4 mb-10 bg-neutral-900/50 border border-white/5 rounded-3xl p-4">
+                    <div className="flex items-center gap-3 mb-6 bg-neutral-900/50 border border-white/5 rounded-2xl p-3">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={20} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
                             <input
                                 type="text"
                                 placeholder="Search creators..."
@@ -138,33 +135,33 @@ export default function FanFeed() {
                                     setSearchQuery(e.target.value);
                                     handleSearch(e.target.value);
                                 }}
-                                className="w-full bg-black/40 border border-white/5 rounded-2xl pl-12 pr-6 py-3 focus:border-rose-500 focus:outline-none transition-all"
+                                className="w-full bg-black/40 border border-white/5 rounded-xl pl-10 pr-4 py-2.5 focus:border-rose-500 focus:outline-none transition-all text-sm"
                             />
                         </div>
                         <div className="flex gap-2">
-                            <button className="p-3 bg-rose-600 rounded-2xl text-white shadow-lg shadow-rose-600/20">
-                                <Flame size={20} />
+                            <button className="p-2.5 bg-rose-600 rounded-xl text-white shadow-lg shadow-rose-600/20">
+                                <Flame size={18} />
                             </button>
-                            <button className="p-3 bg-neutral-800 rounded-2xl text-neutral-400 hover:text-white transition-all">
-                                <Star size={20} />
+                            <button className="p-2.5 bg-neutral-800 rounded-xl text-neutral-400 hover:text-white transition-all">
+                                <Star size={18} />
                             </button>
                         </div>
                     </div>
 
                     {/* Categories */}
-                    <div className="flex gap-4 mb-10 overflow-x-auto pb-4 no-scrollbar">
+                    <div className="flex gap-3 mb-6 overflow-x-auto pb-2 no-scrollbar">
                         {['All', 'Trending', 'Photos', 'Videos', 'Music', 'Fitness', 'Models'].map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
-                                className={`px-6 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-white text-black' : 'bg-neutral-900 text-neutral-400 border border-white/5 hover:border-white/20'}`}>
+                                className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-white text-black' : 'bg-neutral-900 text-neutral-400 border border-white/5 hover:border-white/20'}`}>
                                 {cat}
                             </button>
                         ))}
                     </div>
 
                     {/* Feed */}
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {posts.map((post, index) => {
                             if (posts.length === index + 1) {
                                 return (
@@ -190,44 +187,6 @@ export default function FanFeed() {
                         )}
                     </div>
                 </div>
-            </main>
-
-            {/* Right Sidebar - Suggestions */}
-            <div className="w-80 h-full border-l border-white/5 p-8 hidden xl:block">
-                <h3 className="text-xl font-black text-white mb-6">Suggestions</h3>
-                <div className="space-y-6">
-                    {suggestions.map((creator) => (
-                        <div key={creator.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 overflow-hidden">
-                                    {creator.avatar && <img src={creator.avatar} alt="" className="w-full h-full object-cover" />}
-                                </div>
-                                <div>
-                                    <div className="text-sm font-black text-white truncate max-w-[100px]">{creator.user.name}</div>
-                                    <div className="text-xs text-neutral-500 font-bold">@creator_{creator.id}</div>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleSubscribe(creator.id)}
-                                className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all ${subscribed.includes(creator.id)
-                                    ? 'bg-neutral-800 text-neutral-400'
-                                    : 'bg-rose-500 text-white hover:bg-rose-400'
-                                    }`}
-                            >
-                                {subscribed.includes(creator.id) ? 'Subscribed' : 'Subscribe'}
-                            </button>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="mt-12 p-6 bg-gradient-to-br from-neutral-900 to-black border border-white/5 rounded-3xl">
-                    <h4 className="font-black text-white mb-2">Support Creators</h4>
-                    <p className="text-xs text-neutral-400 leading-relaxed mb-4">Subscribe to unlock exclusive content and support your favorite artists directly.</p>
-                    <button className="w-full bg-white text-black py-3 rounded-xl font-black text-xs hover:bg-rose-500 hover:text-white transition-all">
-                        ADD FUNDS
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }

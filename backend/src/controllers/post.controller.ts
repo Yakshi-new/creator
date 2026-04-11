@@ -5,7 +5,7 @@ export const getPosts = async (req: Request, res: Response) => {
     try {
         const { creatorId } = req.query;
         const posts = await prisma.post.findMany({
-            where: creatorId ? { creatorId: Number(creatorId) } : {},
+            where: creatorId ? { creatorId: String(creatorId) } : {},
             include: {
                 creator: {
                     include: {
@@ -16,7 +16,7 @@ export const getPosts = async (req: Request, res: Response) => {
                 },
                 media: true,
                 _count: {
-                    select: { likes: true, comments: true }
+                    select: { like: true, comment: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -46,6 +46,7 @@ export const createPost = async (req: any, res: Response) => {
                 content: content || null,
                 type: type || 'SUBSCRIBER',
                 price: type === 'PAID' ? Number(price) : null,
+                updatedAt: new Date(),
                 media: {
                     create: mediaUrls.map((url: string) => ({
                         url,
@@ -80,6 +81,13 @@ export const getFeed = async (req: any, res: Response) => {
 
         // Get posts
         const posts = await prisma.post.findMany({
+            where: {
+                isDeleted: false,
+                OR: [
+                    { type: 'PUBLIC' },
+                    { creatorId: { in: subscribedCreatorIds } }
+                ]
+            },
             skip,
             take: limit,
             include: {
@@ -91,12 +99,12 @@ export const getFeed = async (req: any, res: Response) => {
                     }
                 },
                 media: true,
-                likes: {
+                like: {
                     where: { userId },
                     select: { id: true }
                 },
                 _count: {
-                    select: { likes: true, comments: true }
+                    select: { like: true, comment: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -110,7 +118,7 @@ export const getFeed = async (req: any, res: Response) => {
             return {
                 ...post,
                 isLocked,
-                isLiked: post.likes.length > 0
+                isLiked: post.like.length > 0
             };
         });
 
@@ -125,25 +133,7 @@ export const getPostsByCategory = async (req: any, res: Response) => {
     const userId = req.user?.userId;
     // For now, mapping trending to most liked posts
     try {
-        const posts = await prisma.post.findMany({
-            include: {
-                creator: {
-                    include: {
-                        user: { select: { name: true, id: true, email: true } }
-                    }
-                },
-                media: true,
-                _count: { select: { likes: true, comments: true } },
-                likes: userId ? {
-                    where: { userId },
-                    select: { id: true }
-                } : undefined
-            },
-            orderBy: category === 'trending' ? { likes: { _count: 'desc' } } : { createdAt: 'desc' },
-            take: 20
-        });
-
-        let subscribedCreatorIds: number[] = [];
+        let subscribedCreatorIds: string[] = [];
         if (userId) {
             const subscriptions = await prisma.subscription.findMany({
                 where: { fanId: userId, status: 'active' },
@@ -152,6 +142,33 @@ export const getPostsByCategory = async (req: any, res: Response) => {
             subscribedCreatorIds = subscriptions.map((s: any) => s.creatorId);
         }
 
+        const posts = await prisma.post.findMany({
+            where: {
+                isDeleted: false,
+                OR: [
+                    { type: 'PUBLIC' },
+                    { creatorId: { in: subscribedCreatorIds } }
+                ]
+            },
+            include: {
+                creator: {
+                    include: {
+                        user: { select: { name: true, id: true, email: true } }
+                    }
+                },
+                media: true,
+                _count: { select: { like: true, comment: true } },
+                like: userId ? {
+                    where: { userId },
+                    select: { id: true }
+                } : undefined
+            },
+            orderBy: category === 'trending' ? { like: { _count: 'desc' } } : { createdAt: 'desc' },
+            take: 20
+        });
+
+
+
         const feed = posts.map((post: any) => {
             const isSubscribed = subscribedCreatorIds.includes(post.creatorId);
             const isLocked = (post.type === 'SUBSCRIBER' && !isSubscribed) || post.type === 'PAID';
@@ -159,7 +176,7 @@ export const getPostsByCategory = async (req: any, res: Response) => {
             return {
                 ...post,
                 isLocked,
-                isLiked: post.likes ? post.likes.length > 0 : false
+                isLiked: post.like ? post.like.length > 0 : false
             };
         });
 
@@ -170,21 +187,21 @@ export const getPostsByCategory = async (req: any, res: Response) => {
 };
 
 export const toggleLike = async (req: any, res: Response) => {
-    const postId = parseInt(req.params.id);
+    const postId = req.params.id;
     const userId = req.user.userId;
 
     try {
-        const existingLike = await prisma.like.findUnique({
-            where: { userId_postId: { userId: Number(userId), postId: Number(postId) } }
+        const existingLike = await prisma.like.findFirst({
+            where: { userId, postId }
         });
 
         if (existingLike) {
             await prisma.like.delete({ where: { id: existingLike.id } });
-            const count = await prisma.like.count({ where: { postId: Number(postId) } });
+            const count = await prisma.like.count({ where: { postId } });
             return res.json({ isLiked: false, likeCount: count });
         } else {
-            await prisma.like.create({ data: { userId: Number(userId), postId: Number(postId) } });
-            const count = await prisma.like.count({ where: { postId: Number(postId) } });
+            await prisma.like.create({ data: { userId, postId } });
+            const count = await prisma.like.count({ where: { postId } });
             return res.json({ isLiked: true, likeCount: count });
         }
     } catch (err: any) {
@@ -213,8 +230,8 @@ export const getCreatorPosts = async (req: any, res: Response) => {
                 media: true,
                 _count: {
                     select: {
-                        likes: true,
-                        comments: true
+                        like: true,
+                        comment: true
                     }
                 }
             },
@@ -232,7 +249,7 @@ export const getCreatorPosts = async (req: any, res: Response) => {
 
 export const deletePost = async (req: any, res: Response) => {
 
-    const postId = Number(req.params.id);
+    const postId = req.params.id;
     const userId = req.user.userId;
 
     try {
@@ -264,7 +281,7 @@ export const deletePost = async (req: any, res: Response) => {
 };
 
 export const purchasePost = async (req: any, res: Response) => {
-    const postId = parseInt(req.params.id);
+    const postId = req.params.id;
     const userId = req.user.userId;
 
     try {
@@ -290,7 +307,7 @@ export const getPostDetail = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const post = await prisma.post.findUnique({
-            where: { id: Number(id) },
+            where: { id },
             include: { media: true }
         });
         if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -307,7 +324,7 @@ export const updatePost = async (req: any, res: Response) => {
 
     try {
         const post = await prisma.post.findUnique({
-            where: { id: Number(id) },
+            where: { id },
             include: { creator: true }
         });
 
@@ -315,7 +332,7 @@ export const updatePost = async (req: any, res: Response) => {
         if (post.creator.userId !== userId) return res.status(403).json({ message: 'Unauthorized' });
 
         const updatedPost = await prisma.post.update({
-            where: { id: Number(id) },
+            where: { id },
             data: {
                 content: content !== undefined ? content : post.content,
                 type: type !== undefined ? type : post.type,
@@ -330,7 +347,7 @@ export const updatePost = async (req: any, res: Response) => {
 };
 
 export const addComment = async (req: any, res: Response) => {
-    const postId = parseInt(req.params.id);
+    const postId = req.params.id;
     const userId = req.user.userId;
     const { content } = req.body;
 
@@ -357,7 +374,7 @@ export const addComment = async (req: any, res: Response) => {
 };
 
 export const getComments = async (req: any, res: Response) => {
-    const postId = parseInt(req.params.id as string);
+    const postId = req.params.id;
 
     try {
         const comments = await prisma.comment.findMany({
@@ -371,6 +388,42 @@ export const getComments = async (req: any, res: Response) => {
         });
 
         res.json(comments);
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const getPublicFeed = async (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    try {
+        const posts = await prisma.post.findMany({
+            where: {
+                type: 'PUBLIC',
+                published: true,
+                isDeleted: false,
+            },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                creator: {
+                    include: { user: { select: { id: true, name: true, email: true } } }
+                },
+                media: true,
+                _count: { select: { like: true, comment: true } }
+            }
+        });
+
+        // Transform posts to match PostCard requirements
+        const feed = posts.map(post => ({
+            ...post,
+            isLiked: false,
+            isLocked: false, // All public posts are unlocked
+        }));
+
+        res.json(feed);
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }

@@ -91,6 +91,25 @@ export default function AdminSettings() {
                     <p className="text-neutral-500 font-medium">Manage platform fees and view transaction history.</p>
                 </header>
 
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+                    <div className="bg-neutral-900 border border-white/5 rounded-3xl p-6">
+                        <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Total Gross Volume</div>
+                        <div className="text-2xl font-black text-white">$ {transactions.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}</div>
+                    </div>
+                    <div className="bg-neutral-900 border border-white/5 rounded-3xl p-6">
+                        <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Platform Revenue</div>
+                        <div className="text-2xl font-black text-emerald-500">$ {totalRevenue.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-neutral-900 border border-white/5 rounded-3xl p-6">
+                        <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Creator Payouts</div>
+                        <div className="text-2xl font-black text-amber-500">$ {transactions.reduce((sum, t) => sum + t.creatorAmount, 0).toLocaleString()}</div>
+                    </div>
+                    <div className="bg-neutral-900 border border-white/5 rounded-3xl p-6">
+                        <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Successful Trans.</div>
+                        <div className="text-2xl font-black text-blue-500">{transactions.filter(t => t.status === 'SUCCESS' || t.status === 'PENDING').length}</div>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
                     {/* Fee Setting Card */}
                     <div className="bg-neutral-900 border border-white/5 rounded-3xl p-8 hover:border-white/10 transition-colors shadow-2xl shadow-black/40">
@@ -101,8 +120,8 @@ export default function AdminSettings() {
                             <h3 className="text-xl font-bold text-white">Platform Fee</h3>
                         </div>
                         
-                        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
-                            This percentage will be automatically deducted from all creator earnings (subscriptions, tips, and paid posts).
+                        <p className="text-neutral-500 text-sm mb-8 leading-relaxed font-medium">
+                            Global commission rate for all transactions including subscriptions and tips.
                         </p>
 
                         <div className="space-y-6">
@@ -111,71 +130,64 @@ export default function AdminSettings() {
                                     type="number"
                                     value={fee}
                                     onChange={(e) => setFee(e.target.value)}
-                                    className="w-full bg-black/60 border border-white/5 rounded-2xl px-6 py-4 text-white text-2xl font-black focus:outline-none focus:border-rose-500 transition-all text-center pr-16"
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white text-3xl font-black focus:outline-none focus:border-rose-500 transition-all text-center pr-16"
                                     min="0"
                                     max="100"
                                 />
-                                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-2xl font-black text-neutral-600 group-focus-within:text-rose-500 transition-colors">%</span>
+                                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-2xl font-black text-neutral-700 group-focus-within:text-rose-500 transition-colors">%</span>
                             </div>
 
                             <button 
                                 onClick={handleUpdateFee}
                                 disabled={updating}
-                                className="w-full bg-rose-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-rose-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-rose-600/20"
+                                className="w-full bg-gradient-to-tr from-rose-600 to-rose-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl shadow-rose-600/20"
                             >
-                                {updating ? 'Updating...' : <><Save size={20} /> Update Settings</>}
+                                {updating ? 'Saving...' : <><Save size={20} /> Update Settings</>}
                             </button>
                         </div>
 
-                        <div className="mt-8 flex items-start gap-3 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10">
-                            <Info size={18} className="text-amber-500 flex-shrink-0" />
-                            <p className="text-[11px] text-amber-500/80 font-bold leading-relaxed">
-                                Changes are applied immediately to all future transactions. Current subscriptions will retain their initial fee structure until renewal.
+                        <div className="mt-8 p-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Info size={14} className="text-neutral-400" />
+                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Active System</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 font-bold leading-relaxed">
+                                Latest payment gateway integration active. TLS 1.3 encryption enabled for all vault transactions.
                             </p>
                         </div>
                     </div>
 
-                    {/* Revenue Summary */}
-                    <div className="lg:col-span-2 bg-neutral-900 border border-white/5 rounded-3xl p-8 hover:border-white/10 transition-colors shadow-2xl shadow-black/40">
-                        <div className="flex justify-between items-center mb-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl">
-                                    <TrendingUp size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white">Platform Revenue</h3>
-                            </div>
-                            <div className="px-4 py-2 bg-black/40 border border-white/5 rounded-2xl text-xs font-black text-neutral-500 flex items-center gap-2 uppercase tracking-widest">
-                                <Calendar size={14} /> Total Lifetime
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8 mb-10">
+                    {/* Transaction Activity Chart Mock/Summary */}
+                    <div className="lg:col-span-2 bg-neutral-900 border border-white/5 rounded-3xl p-8 flex flex-col justify-between">
+                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <div className="text-sm font-bold text-neutral-500 mb-2 uppercase tracking-widest">Total Fees Collected</div>
-                                <div className="text-5xl font-black text-white mb-2 tracking-tighter">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                                <div className="flex items-center gap-2 text-emerald-500 text-sm font-bold">
-                                    <ArrowUpRight size={16} />
-                                    +{((totalRevenue / (transactions.length || 1)) * 0.1).toFixed(2)}% vs last month
-                                </div>
+                                <h3 className="text-xl font-bold text-white mb-1">Financial Health</h3>
+                                <p className="text-neutral-500 text-sm font-medium">Monthly revenue and payout distribution.</p>
                             </div>
-                            <div className="border-l border-white/5 pl-8">
-                                <div className="text-sm font-bold text-neutral-500 mb-2 uppercase tracking-widest">Creator Payouts</div>
-                                <div className="text-4xl font-black text-neutral-400 mb-2 tracking-tighter">
-                                    ${transactions.reduce((sum, t) => sum + t.creatorAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </div>
-                                <p className="text-neutral-600 text-xs font-bold leading-relaxed">Total amount distributed to creators after platform fees.</p>
+                            <div className="flex gap-2">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                                <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                             </div>
-                        </div>
+                         </div>
 
-                        <div className="p-6 bg-black/40 border border-white/5 rounded-3xl">
-                            <div className="flex items-center justify-between gap-10">
-                                <div>
-                                    <div className="text-sm font-black text-white mb-1">Tax Residency & Compliance</div>
-                                    <div className="text-xs text-neutral-500 font-bold">Automatic withholding and reporting for international transactions.</div>
-                                </div>
-                                <button className="px-6 py-3 bg-white/5 text-white text-xs font-black rounded-xl hover:bg-white/10 transition-all flex-shrink-0">MANAGE TAXES</button>
+                         <div className="flex-1 flex items-end gap-2 px-2 h-32 mb-8">
+                            {/* Simple CSS Bar Chart */}
+                            {[45, 60, 35, 80, 55, 90, 70, 40, 65, 85].map((h, i) => (
+                                <div key={i} className="flex-1 bg-gradient-to-t from-rose-500/20 to-rose-500/60 rounded-t-lg transition-all hover:brightness-150" style={{ height: `${h}%` }}></div>
+                            ))}
+                         </div>
+
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl">
+                                <div className="text-[10px] font-black text-neutral-500 uppercase mb-1">Net Margin</div>
+                                <div className="text-xl font-black text-white">{fee}%</div>
                             </div>
-                        </div>
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl">
+                                <div className="text-[10px] font-black text-neutral-500 uppercase mb-1">Avg Ticket</div>
+                                <div className="text-xl font-black text-white">${(transactions.reduce((sum, t) => sum + t.amount, 0) / (transactions.length || 1)).toFixed(2)}</div>
+                            </div>
+                         </div>
                     </div>
                 </div>
 

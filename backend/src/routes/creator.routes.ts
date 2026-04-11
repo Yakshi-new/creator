@@ -34,7 +34,7 @@ router.put('/profile', authenticate, authorize(['CREATOR']), upload.fields([
     { name: 'coverImage', maxCount: 1 }
 ]), updateCreatorProfile);
 
-router.get('/:id', getCreatorProfile);
+router.get('/:id', authenticate, getCreatorProfile);
 
 router.post('/follow/:id', authenticate, toggleFollow);
 router.post('/:creatorId/subscribe', authenticate, subscribeCreator);

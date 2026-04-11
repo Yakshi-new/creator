@@ -3,317 +3,247 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
-//////////////////////////////////////////////////////
-// USER
-//////////////////////////////////////////////////////
-
-model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String
-  name       String?
-  role       UserRole @default(FAN)
-  isVerified Boolean  @default(false)
-
+model comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
+  content   String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isDeleted Boolean  @default(false)
-
-  creatorProfile Creator?
-
-  postsLiked Like[]
-  comments   Comment[]
-
-  sentMessages     Message[] @relation("sentMessages")
-  receivedMessages Message[] @relation("receivedMessages")
-
-  subscriptions Subscription[] @relation("fanSubscriptions")
-
-  tipsSent Tip[] @relation("fanTips")
-
-  wallet Wallet?
-
-  notifications Notification[]
-
-  followers Follow[] @relation("followers")
-  following Follow[] @relation("following")
-
-  payments Payment[] // 👈 ADD THIS LINE
+  post      post     @relation(fields: [postId], references: [id])
+  user      user     @relation(fields: [userId], references: [id])
 }
 
-//////////////////////////////////////////////////////
-// CREATOR PROFILE
-//////////////////////////////////////////////////////
-
-model Creator {
-  id                Int     @id @default(autoincrement())
-  userId            Int     @unique
-  bio               String?
-  avatar            String?
-  coverImage        String?
-  subscriptionPrice Float   @default(4.99)
-  isKycVerified     Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  posts       Post[]
-  subscribers Subscription[]
-  tips        Tip[]
+model creator {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String            @unique @db.ObjectId
+  bio                String?
+  avatar             String?
+  coverImage         String?
+  subscriptionPrice  Float             @default(4.99)
+  isKycVerified      Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  idNumber           String?
+  kycDocument        String?
+  kycRejectionReason String?
+  kycStatus          creator_kycStatus @default(NOT_SUBMITTED)
+  bankAccountNumber  String?
+  bankIfscCode       String?
+  panCardNumber      String?
+  user               user              @relation(fields: [userId], references: [id])
+  payment            payment[]
+  post               post[]
+  subscription       subscription[]
+  tip                tip[]
+  withdrawal         withdrawal[]
 }
 
-//////////////////////////////////////////////////////
-// POSTS
-//////////////////////////////////////////////////////
-
-model Post {
-  id        Int      @id @default(autoincrement())
-  creatorId Int
-  content   String?
-  type      PostType @default(SUBSCRIBER)
-  price     Float?
-  published Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isDeleted Boolean  @default(false)
-
-  creator Creator @relation(fields: [creatorId], references: [id])
-
-  media    Media[]
-  likes    Like[]
-  comments Comment[]
-}
-
-//////////////////////////////////////////////////////
-// MEDIA
-//////////////////////////////////////////////////////
-
-model Media {
-  id        Int  @id @default(autoincrement())
-  postId    Int?
-  messageId Int?
-
-  url  String
-  type String
-
-  blurHash String?
-
-  createdAt DateTime @default(now())
-  isDeleted Boolean  @default(false)
-
-  post    Post?    @relation(fields: [postId], references: [id])
-  message Message? @relation(fields: [messageId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// LIKES
-//////////////////////////////////////////////////////
-
-model Like {
-  id     Int @id @default(autoincrement())
-  userId Int
-  postId Int
-
-  user User @relation(fields: [userId], references: [id])
-  post Post @relation(fields: [postId], references: [id])
-
-  @@unique([userId, postId])
-}
-
-//////////////////////////////////////////////////////
-// COMMENTS
-//////////////////////////////////////////////////////
-
-model Comment {
-  id      Int    @id @default(autoincrement())
-  userId  Int
-  postId  Int
-  content String
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-  post Post @relation(fields: [postId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// SUBSCRIPTIONS
-//////////////////////////////////////////////////////
-
-model Subscription {
-  id        Int @id @default(autoincrement())
-  fanId     Int
-  creatorId Int
-
-  status String @default("active")
-
-  currentPeriodEnd DateTime
-
-  createdAt DateTime @default(now())
-
-  fan     User    @relation("fanSubscriptions", fields: [fanId], references: [id])
-  creator Creator @relation(fields: [creatorId], references: [id])
-
-  @@unique([fanId, creatorId])
-}
-
-//////////////////////////////////////////////////////
-// TIPS
-//////////////////////////////////////////////////////
-
-model Tip {
-  id        Int @id @default(autoincrement())
-  fanId     Int
-  creatorId Int
-
-  amount  Float
-  message String?
-
-  createdAt DateTime @default(now())
-
-  fan     User    @relation("fanTips", fields: [fanId], references: [id])
-  creator Creator @relation(fields: [creatorId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// DIRECT MESSAGES
-//////////////////////////////////////////////////////
-
-model Message {
-  id         Int @id @default(autoincrement())
-  senderId   Int
-  receiverId Int
-
-  content String?
-
-  isPaid     Boolean @default(false)
-  price      Float?
-  isUnlocked Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  sender   User @relation("sentMessages", fields: [senderId], references: [id])
-  receiver User @relation("receivedMessages", fields: [receiverId], references: [id])
-
-  media Media[]
-}
-
-//////////////////////////////////////////////////////
-// PAYMENTS
-//////////////////////////////////////////////////////
-
-model Payment {
-  id     Int @id @default(autoincrement())
-  userId Int
-
-  amount         Float
-  platformFee    Float         @default(0)
-  creatorAmount  Float         @default(0)
-
-  type   PaymentType
-  status PaymentStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  // Optional link to specific content/subscription
-  creatorId Int?
-}
-
-//////////////////////////////////////////////////////
-// WALLET
-//////////////////////////////////////////////////////
-
-model Wallet {
-  id     Int @id @default(autoincrement())
-  userId Int @unique
-
-  balance Float @default(0)
-
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// NOTIFICATIONS
-//////////////////////////////////////////////////////
-
-model Notification {
-  id     Int @id @default(autoincrement())
-  userId Int
-
-  type    String
-  title   String
-  content String?
-
-  isRead Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-//////////////////////////////////////////////////////
-// FOLLOW SYSTEM
-//////////////////////////////////////////////////////
-
-model Follow {
-  id Int @id @default(autoincrement())
-
-  followerId  Int
-  followingId Int
-
-  follower  User @relation("followers", fields: [followerId], references: [id])
-  following User @relation("following", fields: [followingId], references: [id])
+model follow {
+  id                            String @id @default(auto()) @map("_id") @db.ObjectId
+  followerId                    String @db.ObjectId
+  followingId                   String @db.ObjectId
+  user_follow_followerIdTouser  user   @relation("follow_followerIdTouser", fields: [followerId], references: [id])
+  user_follow_followingIdTouser user   @relation("follow_followingIdTouser", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
 }
 
-//////////////////////////////////////////////////////
-// SETTINGS
-//////////////////////////////////////////////////////
-
-model GlobalSetting {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  value String
-
+model globalsetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     String
   updatedAt DateTime @updatedAt
 }
 
-//////////////////////////////////////////////////////
-// ENUMS
-//////////////////////////////////////////////////////
+model like {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  postId String @db.ObjectId
+  post   post   @relation(fields: [postId], references: [id])
+  user   user   @relation(fields: [userId], references: [id])
 
-enum UserRole {
-  FAN
-  CREATOR
-  ADMIN
+  @@unique([userId, postId])
 }
 
-enum PostType {
+model media {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String?  @db.ObjectId
+  messageId String?  @db.ObjectId
+  url       String
+  type      String
+  blurHash  String?
+  createdAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+  message   message? @relation(fields: [messageId], references: [id])
+  post      post?    @relation(fields: [postId], references: [id])
+}
+
+model message {
+  id                            String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId                      String   @db.ObjectId
+  receiverId                    String   @db.ObjectId
+  content                       String?
+  isPaid                        Boolean  @default(false)
+  price                         Float?
+  isUnlocked                    Boolean  @default(false)
+  createdAt                     DateTime @default(now())
+  media                         media[]
+  user_message_receiverIdTouser user     @relation("message_receiverIdTouser", fields: [receiverId], references: [id])
+  user_message_senderIdTouser   user     @relation("message_senderIdTouser", fields: [senderId], references: [id])
+}
+
+model notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  type      String
+  title     String
+  content   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id])
+}
+
+model payment {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String         @db.ObjectId
+  amount            Float
+  type              payment_type
+  status            payment_status @default(PENDING)
+  createdAt         DateTime       @default(now())
+  creatorAmount     Float          @default(0)
+  creatorId         String?        @db.ObjectId
+  platformFee       Float          @default(0)
+  razorpayOrderId   String?        @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  creator           creator?       @relation(fields: [creatorId], references: [id])
+  user              user           @relation(fields: [userId], references: [id])
+}
+
+model post {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  creatorId String    @db.ObjectId
+  content   String?
+  type      post_type @default(SUBSCRIBER)
+  price     Float?
+  published Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isDeleted Boolean   @default(false)
+  comment   comment[]
+  like      like[]
+  media     media[]
+  creator   creator   @relation(fields: [creatorId], references: [id])
+}
+
+model subscription {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  fanId            String   @db.ObjectId
+  creatorId        String   @db.ObjectId
+  status           String   @default("active")
+  currentPeriodEnd DateTime
+  createdAt        DateTime @default(now())
+  creator          creator  @relation(fields: [creatorId], references: [id])
+  user             user     @relation(fields: [fanId], references: [id])
+
+  @@unique([fanId, creatorId])
+}
+
+model tip {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  fanId     String   @db.ObjectId
+  creatorId String   @db.ObjectId
+  amount    Float
+  message   String?
+  createdAt DateTime @default(now())
+  creator   creator  @relation(fields: [creatorId], references: [id])
+  user      user     @relation(fields: [fanId], references: [id])
+}
+
+model user {
+  id                               String         @id @default(auto()) @map("_id") @db.ObjectId
+  email                            String         @unique
+  password                         String
+  name                             String?
+  role                             user_role      @default(FAN)
+  isVerified                       Boolean        @default(false)
+  createdAt                        DateTime       @default(now())
+  updatedAt                        DateTime       @updatedAt
+  isDeleted                        Boolean        @default(false)
+  isActive                         Boolean        @default(true)
+  comment                          comment[]
+  creator                          creator?
+  follow_follow_followerIdTouser   follow[]       @relation("follow_followerIdTouser")
+  follow_follow_followingIdTouser  follow[]       @relation("follow_followingIdTouser")
+  like                             like[]
+  message_message_receiverIdTouser message[]      @relation("message_receiverIdTouser")
+  message_message_senderIdTouser   message[]      @relation("message_senderIdTouser")
+  notification                     notification[]
+  payment                          payment[]
+  subscription                     subscription[]
+  tip                              tip[]
+  wallet                           wallet?
+}
+
+model wallet {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  balance   Float    @default(0)
+  updatedAt DateTime @updatedAt
+  user      user     @relation(fields: [userId], references: [id])
+}
+
+model withdrawal {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  creatorId     String            @db.ObjectId
+  amount        Float
+  status        withdrawal_status @default(PENDING)
+  payoutMethod  String
+  payoutDetails String
+  processedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  creator       creator           @relation(fields: [creatorId], references: [id])
+}
+
+enum payment_type {
+  SUBSCRIPTION
+  TIP
+  PAID_POST
+  WALLET_DEPOSIT
+}
+
+enum post_type {
   PUBLIC
   SUBSCRIBER
   PAID
 }
 
-enum PaymentStatus {
+enum withdrawal_status {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum payment_status {
   PENDING
   SUCCESS
   FAILED
 }
 
-enum PaymentType {
-  SUBSCRIPTION
-  TIP
-  PAID_POST
-  WALLET_DEPOSIT
+enum user_role {
+  FAN
+  CREATOR
+  ADMIN
+}
+
+enum creator_kycStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
 }

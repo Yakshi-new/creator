@@ -5,12 +5,14 @@ import { useParams } from 'next/navigation';
 import api from '@/lib/api';
 import PostCard from '@/components/PostCard';
 import { Loader2, Lock } from 'lucide-react';
+import { useRazorpay } from '@/hooks/useRazorpay';
 
 export default function CreatorProfilePage() {
     const params = useParams();
     const id = params?.id;
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const { initiatePayment } = useRazorpay();
 
     const fetchProfile = async () => {
         try {
@@ -28,11 +30,23 @@ export default function CreatorProfilePage() {
     }, [id]);
 
     const handleSubscribe = async () => {
+        if (!profile) return;
+        
         try {
-            await api.post(`/creators/${id}/subscribe`);
-            window.location.reload();
+            initiatePayment({
+                amount: profile.subscriptionPrice,
+                type: 'SUBSCRIPTION',
+                creatorId: profile.id,
+                onSuccess: () => {
+                    alert('Subscribed successfully!');
+                    fetchProfile();
+                },
+                onError: () => {
+                    alert('Subscription failed.');
+                }
+            });
         } catch (err: any) {
-            alert(err.response?.data?.message || 'Failed to subscribe');
+            alert(err.response?.data?.message || 'Failed to initiate subscription');
         }
     };
 

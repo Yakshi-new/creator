@@ -11,7 +11,8 @@ import {
     getPostDetail,
     updatePost,
     addComment,
-    getComments
+    getComments,
+    getPublicFeed
 } from '../controllers/post.controller';
 
 import { authenticate, authorize } from '../middleware/auth.middleware';
@@ -21,6 +22,7 @@ import { upload } from '../middleware/upload.middleware';
 const router = Router();
 
 router.get('/', getPosts);
+router.get('/feed/public', getPublicFeed);
 router.get('/feed', authenticate, getFeed);
 router.get('/category/:category', authenticate, getPostsByCategory);
 

@@ -20,6 +20,12 @@ interface DashboardStats {
     totalFans: number;
     totalVolume: number;
     totalPlatformFees: number;
+    recentStats: {
+        earnings: number;
+        fees: number;
+        newPosts: number;
+        newUsers: number;
+    }
 }
 
 export default function AdminDashboard() {
@@ -112,19 +118,23 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="bg-neutral-900 border border-white/5 rounded-3xl p-8">
-                        <h3 className="text-xl font-bold text-white mb-6">Recent Platform Stats</h3>
+                        <h3 className="text-xl font-bold text-white mb-6 uppercase text-xs tracking-widest text-neutral-500">Recent Platform Stats (30D)</h3>
                         <div className="space-y-6">
                             <div className="flex justify-between items-center p-4 bg-black/40 rounded-2xl border border-white/5">
-                                <span className="text-neutral-400 font-bold">Avg. Payout</span>
-                                <span className="text-white font-black">$450.00</span>
+                                <span className="text-neutral-400 font-bold">New Earnings</span>
+                                <span className="text-white font-black">${stats?.recentStats?.earnings.toLocaleString() || '0.00'}</span>
                             </div>
                             <div className="flex justify-between items-center p-4 bg-black/40 rounded-2xl border border-white/5">
-                                <span className="text-neutral-400 font-bold">KYC Success</span>
-                                <span className="text-emerald-500 font-black">94.2%</span>
+                                <span className="text-neutral-400 font-bold">Platform Fees</span>
+                                <span className="text-emerald-500 font-black">${stats?.recentStats?.fees.toLocaleString() || '0.00'}</span>
                             </div>
                             <div className="flex justify-between items-center p-4 bg-black/40 rounded-2xl border border-white/5">
-                                <span className="text-neutral-400 font-bold">Open Tickets</span>
-                                <span className="text-rose-500 font-black">12</span>
+                                <span className="text-neutral-400 font-bold">New Content</span>
+                                <span className="text-amber-500 font-black">+{stats?.recentStats?.newPosts || 0} Posts</span>
+                            </div>
+                            <div className="flex justify-between items-center p-4 bg-black/40 rounded-2xl border border-white/5">
+                                <span className="text-neutral-400 font-bold">New Joinings</span>
+                                <span className="text-rose-500 font-black">+{stats?.recentStats?.newUsers || 0} Users</span>
                             </div>
                         </div>
                     </div>

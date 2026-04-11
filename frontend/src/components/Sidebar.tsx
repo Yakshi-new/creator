@@ -14,7 +14,10 @@ import {
     Wallet as WalletIcon,
     ShieldAlert,
     LayoutDashboard,
-    Plus
+    Plus,
+    FileText,
+    CreditCard,
+    Shield
 } from 'lucide-react';
 import { useWallet } from '@/context/WalletContext';
 import { clsx, type ClassValue } from 'clsx';
@@ -49,14 +52,18 @@ export default function Sidebar({ role }: SidebarProps) {
         { label: 'Create Post', href: '/creator/create', icon: PlusCircle },
         { label: 'Messages', href: '/creator/messages', icon: MessageSquare },
         { label: 'Earnings', href: '/creator/earnings', icon: WalletIcon },
+        { label: 'Explore Feed', href: '/creator/explore', icon: TrendingUp },
         { label: 'Profile Settings', href: '/creator/settings', icon: User },
     ];
 
     const adminLinks = [
         { label: 'Platform Stats', href: '/admin/dashboard', icon: LayoutDashboard },
+        { label: 'Revenue & Fees', href: '/admin/revenue', icon: WalletIcon },
+        { label: 'Withdrawals', href: '/admin/withdrawals', icon: CreditCard },
         { label: 'Creators', href: '/admin/creators', icon: User },
         { label: 'Fans', href: '/admin/fans', icon: Heart },
-        { label: 'Payments & Fees', href: '/admin/settings', icon: WalletIcon },
+        { label: 'Manage Content', href: '/admin/content', icon: FileText },
+        { label: 'KYC Checks', href: '/admin/kyc', icon: Shield },
         { label: 'Moderation', href: '/admin/moderation', icon: ShieldAlert },
     ];
 
@@ -108,21 +115,24 @@ export default function Sidebar({ role }: SidebarProps) {
             </div>
 
             <div className="mt-auto space-y-4">
-                <div className="bg-neutral-900/50 border border-white/5 rounded-3xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="text-[10px] font-black text-neutral-500 tracking-widest uppercase">My Balance</div>
-                        <WalletIcon size={14} className="text-rose-500" />
+                {/* My Balance — only visible for fan users */}
+                {role === 'FAN' && (
+                    <div className="bg-neutral-900/50 border border-white/5 rounded-3xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="text-[10px] font-black text-neutral-500 tracking-widest uppercase">My Balance</div>
+                            <WalletIcon size={14} className="text-rose-500" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="text-xl font-black text-white">₹{balance.toFixed(2)}</div>
+                            <button
+                                onClick={handleAddFunds}
+                                className="bg-white/10 hover:bg-white/20 p-1.5 rounded-lg transition-all"
+                            >
+                                <Plus size={16} className="text-white" />
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <div className="text-xl font-black text-white">${balance.toFixed(2)}</div>
-                        <button
-                            onClick={handleAddFunds}
-                            className="bg-white/10 hover:bg-white/20 p-1.5 rounded-lg transition-all"
-                        >
-                            <Plus size={16} className="text-white" />
-                        </button>
-                    </div>
-                </div>
+                )}
 
                 <button
                     onClick={handleLogout}

@@ -45,7 +45,7 @@ export const getConversations = async (req: any, res: Response) => {
 
 export const getMessages = async (req: any, res: Response) => {
     const userId = req.user.userId;
-    const otherUserId = parseInt(req.params.otherUserId);
+    const otherUserId = req.params.otherUserId;
 
     try {
         const messages = await prisma.message.findMany({
@@ -72,7 +72,7 @@ export const sendMessage = async (req: any, res: Response) => {
         const message = await prisma.message.create({
             data: {
                 senderId,
-                receiverId: Number(receiverId),
+                receiverId: receiverId,
                 content,
                 isPaid: !!isPaid,
                 price: isPaid ? Number(price) : null,

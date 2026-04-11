@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 const registerSchema = z.object({
     email: z.string().email(),
-    password: z.string().min(8),
+    password: z.string().min(6),
     name: z.string().optional(),
     role: z.enum(['FAN', 'CREATOR']).default('FAN'),
 });
@@ -32,10 +32,18 @@ export const register = async (req: Request, res: Response) => {
                 email,
                 password: hashedPassword,
                 name,
-                role,
-                creatorProfile: role === 'CREATOR' ? { create: {} } : undefined,
+                updatedAt: new Date(),
             },
         });
+
+        if (role === 'CREATOR') {
+            await prisma.creator.create({
+                data: {
+                    userId: user.id,
+                    updatedAt: new Date(),
+                }
+            });
+        }
 
         res.status(201).json({ message: 'User registered successfully', userId: user.id });
     } catch (err: any) {
@@ -53,7 +61,7 @@ export const login = async (req: Request, res: Response) => {
                 isDeleted: false
             },
             include: {
-                creatorProfile: { select: { id: true } }
+                creator: { select: { id: true } }
             }
         })
         if (!user) {
@@ -68,7 +76,7 @@ export const login = async (req: Request, res: Response) => {
         const accessToken = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_ACCESS_SECRET || 'access_secret',
-            { expiresIn: '15m' }
+            { expiresIn: '1h' }
         );
 
         const refreshToken = jwt.sign(
@@ -92,7 +100,7 @@ export const login = async (req: Request, res: Response) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
-                creatorId: user.creatorProfile?.id || null, // <-- send this
+                creatorId: user.creator?.id || null, // <-- send this
             },
         });
     } catch (err: any) {
@@ -110,7 +118,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     if (!token) return res.status(401).json({ message: 'No refresh token' });
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'refresh_secret') as { userId: number };
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'refresh_secret') as { userId: string };
         const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
         if (!user) return res.status(401).json({ message: 'User not found' });
@@ -118,7 +126,7 @@ export const refreshToken = async (req: Request, res: Response) => {
         const accessToken = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_ACCESS_SECRET || 'access_secret',
-            { expiresIn: '15m' }
+            { expiresIn: '1h' }
         );
 
         res.json({ accessToken });
@@ -130,28 +138,34 @@ export const refreshToken = async (req: Request, res: Response) => {
 // --- FORGOT PASSWORD (DEMO MODE) ---
 export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
+    console.log(`Forgot Password Request for: ${email}`);
     try {
         const user = await prisma.user.findFirst({ where: { email, isDeleted: false } });
+        console.log(`User found: ${user ? 'yes' : 'no'}`);
         if (!user) return res.status(404).json({ message: 'No account found with this email' });
         
         // In a real app, send a reset link via email here.
         // For this demo, we'll just return success.
         res.json({ message: 'Password reset link sent to your email' });
     } catch (err: any) {
+        console.error(`Forgot Password Error: ${err.message}`);
         res.status(500).json({ message: err.message });
     }
 };
 
 export const resetPassword = async (req: Request, res: Response) => {
     const { email, newPassword } = req.body;
+    console.log(`Reset Password Request for: ${email}`);
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 12);
-        await prisma.user.update({
+        const user = await prisma.user.update({
             where: { email },
-            data: { password: hashedPassword }
+            data: { password: hashedPassword, updatedAt: new Date() }
         });
+        console.log(`Password reset success for: ${email}`);
         res.json({ message: 'Password reset successfully' });
     } catch (err: any) {
+        console.error(`Reset Password Error: ${err.message}`);
         res.status(500).json({ message: err.message });
     }
 };

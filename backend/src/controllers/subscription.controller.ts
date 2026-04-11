@@ -7,21 +7,21 @@ export const subscribeToCreator = async (req: any, res: Response) => {
 
     try {
         const creator = await prisma.creator.findUnique({
-            where: { id: parseInt(creatorId) }
+            where: { id: creatorId }
         });
 
         if (!creator) return res.status(404).json({ message: 'Creator not found' });
 
         // Update logic: Use upsert for subscription
         const subscription = await prisma.subscription.upsert({
-            where: { fanId_creatorId: { fanId, creatorId: parseInt(creatorId) } },
+            where: { fanId_creatorId: { fanId, creatorId } },
             update: {
                 status: 'active',
                 currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
             },
             create: {
                 fanId,
-                creatorId: parseInt(creatorId),
+                creatorId,
                 status: 'active',
                 currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             }

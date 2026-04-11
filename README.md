@@ -15,7 +15,7 @@ A production-ready creator subscription platform similar to OnlyFans, built with
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 14, TailwindCSS, TypeScript, Framer Motion.
 - **Backend**: Node.js, Express, TypeScript, Prisma ORM.
-- **Database**: PostgreSQL.
+- **Database**: MongoDB.
 - **Cache**: Redis.
 - **Storage**: Cloudflare R2 / AWS S3.
 - **Real-time**: Socket.io.
@@ -45,7 +45,7 @@ A production-ready creator subscription platform similar to OnlyFans, built with
 
 ### Backend (.env)
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/db"
+DATABASE_URL="mongodb://localhost:27017/creator_platform"
 REDIS_URL="redis://localhost:6379"
 JWT_ACCESS_SECRET="..."
 JWT_REFRESH_SECRET="..."
@@ -63,9 +63,11 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="..."
 ## 🛠 Installation & Setup
 
 1. **Clone the repository**
-2. **Setup Services**: Use Docker to start PostgreSQL and Redis.
+2. **Setup Services**: Ensure MongoDB and Redis are running.
+   If using local MongoDB, you may need to initialize a replica set:
    ```bash
-   docker-compose up -d
+   # Run this if using a fresh local MongoDB instance
+   mongosh --eval "rs.initiate()"
    ```
 3. **Backend Setup**:
    ```bash
@@ -94,3 +96,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="..."
 
 
 <!-- Hii I have just test the admin and creator panel so now their is a big issue when last update is their is only user register data will store in db, but creator post and other information post pricing and all menu will not create db record and also admin has not data fetching from db i want every funcinality work  using db every data gets and store and update in database like register record . -->
+
+
+1. Fan panel first update the Home feed page its show public post of all creators subscriber post also in feed 
+2. In fan panel When we open the discover page and click on the view botton duplicate side panel was show on page
+3.  

@@ -39,7 +39,7 @@ try {
 // Initialize Socket.io
 const allowedOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',')
-    : ['http://localhost:3000'];
+    : ['http://localhost:3100'];
 
 const io = new Server(server, {
     cors: {
@@ -67,8 +67,8 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+server.listen(PORT as number, '127.0.0.1', () => {
+    console.log(`Server is running on http://127.0.0.1:${PORT}`);
 });
 
 export { io, redis };

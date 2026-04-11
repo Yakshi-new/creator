@@ -5,7 +5,7 @@ import {
     User, Lock, Bell, CreditCard, Shield,
     Camera, Save, Eye, EyeOff, CheckCircle,
     AlertCircle, Loader2, Globe, Instagram,
-    Twitter, Youtube, Link2, DollarSign
+    Twitter, Youtube, Link2, DollarSign, Clock
 } from 'lucide-react';
 import api from '@/lib/api';
 import { getMediaUrl } from '@/lib/utils';
@@ -21,7 +21,7 @@ const DEFAULT_PROFILE = {
     notifications: { newSubscriber: true, newTip: true, newMessage: true, newComment: false, weeklyReport: true },
     payout: { method: 'bank', accountName: '', accountLast4: '', bankName: '' }
 };
-type Tab = 'profile' | 'security' | 'notifications' | 'payout';
+type Tab = 'profile' | 'security' | 'notifications' | 'payout' | 'verification';
 
 function TabButton({ label, icon: Icon, active, onClick }: any) {
     return (
@@ -65,11 +65,21 @@ export default function CreatorSettings() {
     const [notifications, setNotifications] = useState(DEFAULT_PROFILE.notifications);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
+    const [kyc, setKyc] = useState({ status: 'NOT_SUBMITTED', reason: '', isVerified: false });
+    const [kycFile, setKycFile] = useState<File | null>(null);
+    const [idNumber, setIdNumber] = useState('');
+    const [panNumber, setPanNumber] = useState('');
+    const [bankAccount, setBankAccount] = useState('');
+    const [bankIfsc, setBankIfsc] = useState('');
+
     useEffect(() => {
         const fetch = async () => {
              try {
-                 const res = await api.get('/creators/dashboard');
-                 const data = res.data as any;
+                 const [dashRes, kycRes] = await Promise.all([
+                     api.get('/creators/dashboard'),
+                     api.get('/kyc/status')
+                 ]);
+                 const data = dashRes.data as any;
                  if (data?.creator) {
                      setProfile(prev => ({
                          ...prev,
@@ -81,6 +91,18 @@ export default function CreatorSettings() {
                          subscriptionPrice: data.creator.subscriptionPrice || 0,
                      }));
                      setAvatarPreview(getMediaUrl(data.creator.avatar) || null);
+                 }
+                 if (kycRes.data) {
+                     const kData = kycRes.data as any;
+                     setKyc({
+                         status: kData.kycStatus,
+                         reason: kData.kycRejectionReason,
+                         isVerified: kData.isKycVerified
+                     });
+                     if (kData.idNumber) setIdNumber(kData.idNumber);
+                     if (kData.panCardNumber) setPanNumber(kData.panCardNumber);
+                     if (kData.bankAccountNumber) setBankAccount(kData.bankAccountNumber);
+                     if (kData.bankIfscCode) setBankIfsc(kData.bankIfscCode);
                  }
              } catch {
                  // Keep default
@@ -96,6 +118,7 @@ export default function CreatorSettings() {
         { id: 'security', label: 'Security', icon: Lock },
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'payout', label: 'Payout Settings', icon: CreditCard },
+        { id: 'verification', label: 'KYC Verification', icon: Shield },
     ];
 
     const handleSave = async () => {
@@ -114,6 +137,30 @@ export default function CreatorSettings() {
             setSaving(false);
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
+        }
+    };
+
+    const handleSubmitKyc = async () => {
+        if (!kycFile || !idNumber || !panNumber || !bankAccount || !bankIfsc) {
+            return alert('Please provide all requested details');
+        }
+        setSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('idDocument', kycFile);
+            formData.append('idNumber', idNumber);
+            formData.append('panCardNumber', panNumber);
+            formData.append('bankAccountNumber', bankAccount);
+            formData.append('bankIfscCode', bankIfsc);
+            await api.post('/kyc/submit', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            alert('KYC documents submitted successfully!');
+            setKyc(prev => ({ ...prev, status: 'PENDING' }));
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Submission failed');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -471,7 +518,138 @@ export default function CreatorSettings() {
                             </button>
                         </div>
                     )}
+
+                    {/* ── KYC VERIFICATION ── */}
+                    {activeTab === 'verification' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h2 className="text-2xl font-black text-white mb-1">Identity Verification</h2>
+                                <p className="text-neutral-500 text-sm">Submit your documents to get verified and enable payouts</p>
+                            </div>
+
+                            {kyc.isVerified ? (
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] p-8 text-center">
+                                    <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle size={32} className="text-white" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-white mb-2">You are Verified!</h3>
+                                    <p className="text-neutral-400 text-sm">Your identity has been confirmed. You have full access to platform features.</p>
+                                </div>
+                            ) : kyc.status === 'PENDING' ? (
+                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-[2rem] p-8 text-center">
+                                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                                        <Clock size={32} className="text-white" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-white mb-2">Verification Pending</h3>
+                                    <p className="text-neutral-400 text-sm">Our team is reviewing your documents. This usually takes 24-48 hours.</p>
+                                </div>
+                            ) : (
+                                <div className="bg-neutral-900 border border-white/5 rounded-[2rem] p-8 space-y-6">
+                                    {kyc.status === 'REJECTED' && (
+                                        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-start gap-3">
+                                            <AlertCircle className="text-rose-500 shrink-0 mt-0.5" size={18} />
+                                            <div>
+                                                <p className="text-rose-500 text-sm font-black uppercase tracking-widest text-[10px] mb-1">Previously Rejected</p>
+                                                <p className="text-white text-sm font-bold">{kyc.reason}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs font-black text-neutral-500 mb-2 block uppercase tracking-widest">ID Document (Passport/ID Card)</label>
+                                            <div 
+                                                className={`w-full aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all cursor-pointer relative overflow-hidden ${kycFile ? 'border-rose-500' : 'border-white/10 hover:border-white/20'}`}
+                                                onClick={() => document.getElementById('kyc-file')?.click()}
+                                            >
+                                                <input 
+                                                    id="kyc-file" type="file" className="hidden" 
+                                                    accept="image/*,.pdf"
+                                                    onChange={e => setKycFile(e.target.files?.[0] || null)}
+                                                />
+                                                {kycFile ? (
+                                                    <div className="p-6 text-center">
+                                                        <CheckCircle size={32} className="text-rose-500 mx-auto mb-2" />
+                                                        <p className="text-sm font-black text-white">{kycFile.name}</p>
+                                                        <p className="text-xs text-neutral-500 mt-1">Click to change</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-6 text-center">
+                                                        < Camera size={32} className="text-neutral-700 mx-auto mb-2" />
+                                                        <p className="text-sm font-bold text-neutral-500">Click to upload photo of ID</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-black text-neutral-500 mb-2 block uppercase tracking-widest">ID Number / SSN</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter your document identifier number"
+                                                value={idNumber}
+                                                onChange={e => setIdNumber(e.target.value)}
+                                                className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-rose-500/50 transition-all font-bold"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-black text-neutral-500 mb-2 block uppercase tracking-widest">PAN Card Number</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="ABCDE1234F"
+                                                    value={panNumber}
+                                                    onChange={e => setPanNumber(e.target.value.toUpperCase())}
+                                                    className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-rose-500/50 transition-all font-bold uppercase"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-black text-neutral-500 mb-2 block uppercase tracking-widest">Bank IFSC Code</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="BANK0123456"
+                                                    value={bankIfsc}
+                                                    onChange={e => setBankIfsc(e.target.value.toUpperCase())}
+                                                    className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-rose-500/50 transition-all font-bold uppercase"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-black text-neutral-500 mb-2 block uppercase tracking-widest">Bank Account Number</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter your full bank account number"
+                                                value={bankAccount}
+                                                onChange={e => setBankAccount(e.target.value)}
+                                                className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-rose-500/50 transition-all font-bold"
+                                            />
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <div className="flex items-start gap-3 p-4 bg-white/5 rounded-2xl mb-6">
+                                                <Shield className="text-emerald-500 shrink-0" size={18} />
+                                                <p className="text-xs text-neutral-500 leading-relaxed font-bold">
+                                                    Your information is encrypted and only used for identity verification and payout purposes. We do not share your bank details with anyone.
+                                                </p>
+                                            </div>
+
+                                            <button 
+                                                onClick={handleSubmitKyc}
+                                                disabled={saving || !kycFile || !idNumber || !panNumber || !bankAccount || !bankIfsc}
+                                                className="w-full py-4 bg-gradient-to-r from-rose-500 to-amber-500 text-white font-black rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-rose-500/20 disabled:opacity-50"
+                                            >
+                                                {saving ? 'Submitting...' : 'Submit for Verification'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
+
             </div>
         </div>
     );

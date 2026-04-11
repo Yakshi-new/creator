@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function LoginPage() {
@@ -16,6 +17,9 @@ export default function LoginPage() {
     const [newPass, setNewPass] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
     const [forgotStatus, setForgotStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -107,14 +111,23 @@ export default function LoginPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-neutral-300 mb-2">Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 focus:border-rose-500 focus:outline-none transition-all"
-                            placeholder="••••••••"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 focus:border-rose-500 focus:outline-none transition-all pr-14"
+                                placeholder="••••••••"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                         <div className="flex justify-end mt-2">
                              <button 
                                  type="button"
@@ -180,22 +193,40 @@ export default function LoginPage() {
                                 />
                             ) : (
                                 <>
-                                    <input
-                                        type="password"
-                                        value={newPass}
-                                        onChange={(e) => setNewPass(e.target.value)}
-                                        className="w-full bg-black border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-rose-500 focus:outline-none transition-all"
-                                        placeholder="New Password"
-                                        required
-                                    />
-                                    <input
-                                        type="password"
-                                        value={confirmPass}
-                                        onChange={(e) => setConfirmPass(e.target.value)}
-                                        className="w-full bg-black border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-rose-500 focus:outline-none transition-all"
-                                        placeholder="Confirm New Password"
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showNewPass ? "text" : "password"}
+                                            value={newPass}
+                                            onChange={(e) => setNewPass(e.target.value)}
+                                            className="w-full bg-black border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-rose-500 focus:outline-none transition-all pr-12"
+                                            placeholder="New Password"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPass(!showNewPass)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                                        >
+                                            {showNewPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPass ? "text" : "password"}
+                                            value={confirmPass}
+                                            onChange={(e) => setConfirmPass(e.target.value)}
+                                            className="w-full bg-black border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-rose-500 focus:outline-none transition-all pr-12"
+                                            placeholder="Confirm New Password"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPass(!showConfirmPass)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                                        >
+                                            {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </>
                             )}
                             <button

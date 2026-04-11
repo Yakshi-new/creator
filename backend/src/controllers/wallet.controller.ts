@@ -11,7 +11,7 @@ export const getWalletBalance = async (req: any, res: Response) => {
 
         if (!wallet) {
             const newWallet = await prisma.wallet.create({
-                data: { userId, balance: 0.0 }
+                data: { userId, balance: 0.0, updatedAt: new Date() }
             });
             return res.json(newWallet);
         }
@@ -31,8 +31,8 @@ export const addFunds = async (req: any, res: Response) => {
     try {
         const wallet = await prisma.wallet.upsert({
             where: { userId },
-            update: { balance: { increment: amount } },
-            create: { userId, balance: amount }
+            update: { balance: { increment: amount }, updatedAt: new Date() },
+            create: { userId, balance: amount, updatedAt: new Date() }
         });
 
         await prisma.payment.create({

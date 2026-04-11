@@ -40,24 +40,65 @@ export default function EarningsPage() {
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<Period>('30d');
     const [txFilter, setTxFilter] = useState<string>('all');
+    const [showPayoutModal, setShowPayoutModal] = useState(false);
+    const [payoutForm, setPayoutForm] = useState({ amount: '', method: 'BANK', details: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [bankDetails, setBankDetails] = useState<{ accountNumber?: string; ifscCode?: string }>({});
+
+    const fetch = async () => {
+        setLoading(true);
+        try {
+            const { data: earningsData } = await api.get('/creators/earnings');
+            setData(earningsData);
+        } catch {
+            setData({
+                stats: { totalEarnings: 0, thisMonth: 0, lastMonth: 0, subscriptionRevenue: 0, tipRevenue: 0, paidPostRevenue: 0, pendingPayout: 0, lifetimePayout: 0 },
+                monthlyBreakdown: [],
+                transactions: [],
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetch = async () => {
-            try {
-                const { data: earningsData } = await api.get('/creators/earnings');
-                setData(earningsData);
-            } catch {
-                setData({
-                    stats: { totalEarnings: 0, thisMonth: 0, lastMonth: 0, subscriptionRevenue: 0, tipRevenue: 0, paidPostRevenue: 0, pendingPayout: 0, lifetimePayout: 0 },
-                    monthlyBreakdown: [],
-                    transactions: [],
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
         fetch();
+        // Fetch KYC bank details to auto-populate payout form
+        api.get('/kyc/status').then((res: any) => {
+            const d = res.data as any;
+            if (d?.bankAccountNumber) {
+                setBankDetails({ accountNumber: d.bankAccountNumber, ifscCode: d.bankIfscCode });
+                setPayoutForm(prev => ({
+                    ...prev,
+                    details: `Account: ${d.bankAccountNumber}, IFSC: ${d.bankIfscCode}`
+                }));
+            }
+        }).catch(() => {});
     }, []);
+
+    const handlePayoutRequest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (parseFloat(payoutForm.amount) < 50) {
+            alert("Minimum payout is $50");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await api.post('/withdrawals/request', {
+                amount: parseFloat(payoutForm.amount),
+                payoutMethod: payoutForm.method,
+                payoutDetails: payoutForm.details
+            });
+            alert("Withdrawal request submitted!");
+            setShowPayoutModal(false);
+            fetch(); // Refresh data
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to submit request");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (loading) return (
         <div className="flex h-screen items-center justify-center bg-black">
@@ -174,14 +215,82 @@ export default function EarningsPage() {
                     {/* Payout button */}
                     <div className="mt-8 p-5 bg-gradient-to-br from-rose-500/10 to-amber-500/10 border border-rose-500/20 rounded-2xl">
                         <div className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-1">Available to Withdraw</div>
-                        <div className="text-3xl font-black text-white mb-1">${d.stats.pendingPayout.toFixed(2)}</div>
+                        <div className="text-3xl font-black text-white mb-1">${d.balance?.toFixed(2) || d.stats.pendingPayout.toFixed(2)}</div>
                         <div className="text-xs text-neutral-500 mb-4">Minimum payout: $50.00</div>
-                        <button className="w-full py-3 bg-gradient-to-r from-rose-500 to-amber-500 text-white font-black rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                        <button 
+                            onClick={() => {
+                                setPayoutForm({ ...payoutForm, amount: (d.balance || 0).toString() });
+                                setShowPayoutModal(true);
+                            }}
+                            className="w-full py-3 bg-gradient-to-r from-rose-500 to-amber-500 text-white font-black rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                        >
                             <Banknote size={16} /> Request Payout
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Payout Modal */}
+            {showPayoutModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                    <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-[2.5rem] p-10 relative shadow-2xl">
+                        <h2 className="text-2xl font-black mb-2 text-white">Request Payout</h2>
+                        <p className="text-neutral-500 mb-8 font-medium">Funds will be sent to your preferred payment method.</p>
+                        
+                        <form onSubmit={handlePayoutRequest} className="space-y-6">
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">Amount ($)</label>
+                                <input 
+                                    type="number"
+                                    value={payoutForm.amount}
+                                    onChange={e => setPayoutForm({...payoutForm, amount: e.target.value})}
+                                    className="w-full bg-black border border-white/10 rounded-2xl p-4 focus:border-rose-500 outline-none transition-all font-bold"
+                                    placeholder="Enter amount"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">Payout Method</label>
+                                <div className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white font-bold text-sm">
+                                    Bank Transfer (NEFT/IMPS)
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">Bank Details</label>
+                                <textarea 
+                                    value={payoutForm.details}
+                                    onChange={e => setPayoutForm({...payoutForm, details: e.target.value})}
+                                    className="w-full bg-black border border-white/10 rounded-2xl p-4 focus:border-rose-500 outline-none transition-all font-medium h-24 resize-none"
+                                    placeholder="Account number and IFSC code"
+                                    required
+                                />
+                                {bankDetails.accountNumber && (
+                                    <p className="text-[10px] text-emerald-500 font-bold mt-1 pl-1">✓ Auto-filled from your KYC bank details</p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowPayoutModal(false)}
+                                    className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-neutral-400 hover:text-white transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-4 bg-rose-500 rounded-2xl font-black hover:bg-rose-600 transition-all text-white disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Submitting...' : 'Confirm'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Transaction History */}
             <div className="bg-neutral-900 border border-white/5 rounded-3xl p-8">

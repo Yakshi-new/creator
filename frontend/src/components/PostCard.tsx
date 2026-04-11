@@ -66,16 +66,31 @@ export default function PostCard({ post, onSubscribe }: PostCardProps) {
         setLoading(true);
         try {
             if (post.type === 'SUBSCRIBER') {
+                if (!confirm(`Subscribe to ${post.creator.user.name} using your wallet balance?`)) {
+                    setLoading(false);
+                    return;
+                }
                 await api.post(`/creators/${post.creator.id}/subscribe`);
                 if (onSubscribe) onSubscribe(post.creator.id);
                 window.location.reload(); 
             } else if (post.type === 'PAID') {
+                if (!confirm(`Purchase this post using your wallet balance?`)) {
+                    setLoading(false);
+                    return;
+                }
                 await api.post(`/posts/${post.id}/purchase`);
                 window.location.reload();
             }
         } catch (err: any) {
             console.error('Action error:', err);
-            alert(err.response?.data?.message || 'Failed to complete transaction.');
+            const msg = err.response?.data?.message || '';
+            if (msg.toLowerCase().includes('insufficient wallet balance')) {
+                if (confirm('Insufficient wallet balance. Go to Wallet to add funds?')) {
+                    window.location.href = '/fan/wallet';
+                }
+            } else {
+                alert(msg || 'Failed to complete transaction.');
+            }
         } finally {
             setLoading(false);
         }
@@ -158,7 +173,7 @@ export default function PostCard({ post, onSubscribe }: PostCardProps) {
             </div>
 
             {/* Media Section */}
-            <div className="relative aspect-video bg-black border-y border-white/5 flex items-center justify-center overflow-hidden">
+            <div className={`relative aspect-video border-y border-white/5 flex items-center justify-center overflow-hidden ${post.isLocked ? 'bg-gradient-to-br from-neutral-800 to-black' : 'bg-black'}`}>
                 {post.media.length > 0 && (
                     post.media[0].type === 'video' ? (
                         <video
@@ -189,7 +204,7 @@ export default function PostCard({ post, onSubscribe }: PostCardProps) {
                         <p className="text-neutral-400 text-sm mb-6 text-center max-w-[200px]">
                             {post.type === 'SUBSCRIBER'
                                 ? 'Subscribe to creator to view this content.'
-                                : 'Unlock this exclusive content for $5.00'}
+                                : 'Unlock this exclusive content'}
                         </p>
                         <button
                             onClick={handleSubscribe}
@@ -277,7 +292,7 @@ export default function PostCard({ post, onSubscribe }: PostCardProps) {
                         <h3 className="text-xl font-black text-white mb-4">Send a Tip</h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 mb-1 block">Amount (USD)</label>
+                                <label className="text-xs font-bold text-neutral-500 mb-1 block">Amount (INR)</label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
                                     <input 
