@@ -16,7 +16,7 @@ export const getPosts = async (req: Request, res: Response) => {
                 },
                 media: true,
                 _count: {
-                    select: { like: true, comment: true }
+                    select: { likes: true, comments: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -99,12 +99,12 @@ export const getFeed = async (req: any, res: Response) => {
                     }
                 },
                 media: true,
-                like: {
+                likes: {
                     where: { userId },
                     select: { id: true }
                 },
                 _count: {
-                    select: { like: true, comment: true }
+                    select: { likes: true, comments: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -118,7 +118,7 @@ export const getFeed = async (req: any, res: Response) => {
             return {
                 ...post,
                 isLocked,
-                isLiked: post.like.length > 0
+                isLiked: post.likes.length > 0
             };
         });
 
@@ -157,13 +157,13 @@ export const getPostsByCategory = async (req: any, res: Response) => {
                     }
                 },
                 media: true,
-                _count: { select: { like: true, comment: true } },
-                like: userId ? {
+                _count: { select: { likes: true, comments: true } },
+                likes: userId ? {
                     where: { userId },
                     select: { id: true }
                 } : undefined
             },
-            orderBy: category === 'trending' ? { like: { _count: 'desc' } } : { createdAt: 'desc' },
+            orderBy: category === 'trending' ? { likes: { _count: 'desc' } } : { createdAt: 'desc' },
             take: 20
         });
 
@@ -176,7 +176,7 @@ export const getPostsByCategory = async (req: any, res: Response) => {
             return {
                 ...post,
                 isLocked,
-                isLiked: post.like ? post.like.length > 0 : false
+                isLiked: post.likes ? post.likes.length > 0 : false
             };
         });
 
@@ -230,8 +230,8 @@ export const getCreatorPosts = async (req: any, res: Response) => {
                 media: true,
                 _count: {
                     select: {
-                        like: true,
-                        comment: true
+                        likes: true,
+                        comments: true
                     }
                 }
             },
@@ -303,15 +303,52 @@ export const purchasePost = async (req: any, res: Response) => {
     }
 };
 
-export const getPostDetail = async (req: Request, res: Response) => {
+export const getPostDetail = async (req: any, res: Response) => {
     const { id } = req.params;
+    const userId = req.user?.userId;
+
     try {
         const post = await prisma.post.findUnique({
             where: { id },
-            include: { media: true }
+            include: {
+                creator: {
+                    include: {
+                        user: {
+                            select: { name: true, id: true, email: true }
+                        }
+                    }
+                },
+                media: true,
+                likes: userId ? {
+                    where: { userId },
+                    select: { id: true }
+                } : undefined,
+                _count: {
+                    select: { likes: true, comments: true }
+                }
+            }
         });
+
         if (!post) return res.status(404).json({ message: 'Post not found' });
-        res.json(post);
+
+        // Check lock status
+        let isSubscribed = false;
+        if (userId) {
+            const subscription = await prisma.subscription.findFirst({
+                where: { fanId: userId, creatorId: post.creatorId, status: 'active' },
+            });
+            isSubscribed = !!subscription;
+        }
+
+        const isLocked = (post.type === 'SUBSCRIBER' && !isSubscribed) || post.type === 'PAID';
+
+        const transformedPost = {
+            ...post,
+            isLocked,
+            isLiked: userId ? (post.likes?.length ?? 0) > 0 : false
+        };
+
+        res.json(transformedPost);
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }
@@ -412,7 +449,7 @@ export const getPublicFeed = async (req: Request, res: Response) => {
                     include: { user: { select: { id: true, name: true, email: true } } }
                 },
                 media: true,
-                _count: { select: { like: true, comment: true } }
+                _count: { select: { likes: true, comments: true } }
             }
         });
 

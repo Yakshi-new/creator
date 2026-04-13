@@ -134,8 +134,8 @@ model post {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   isDeleted Boolean   @default(false)
-  comment   comment[]
-  like      like[]
+  comments  comment[]
+  likes     like[]
   media     media[]
   creator   creator   @relation(fields: [creatorId], references: [id])
 }

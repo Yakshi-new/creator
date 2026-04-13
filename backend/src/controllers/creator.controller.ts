@@ -40,7 +40,7 @@ export const getCreatorProfile = async (req: any, res: Response) => {
                 user: { select: { id: true, name: true, email: true, createdAt: true } },
                 post: {
                     where: { isDeleted: false },
-                    include: { media: true, _count: { select: { like: true, comment: true } } },
+                    include: { media: true, _count: { select: { likes: true, comments: true } } },
                     orderBy: { createdAt: 'desc' },
                 },
                 _count: { select: { subscription: true } },
@@ -359,7 +359,7 @@ export const getCreatorDashboard = async (req: any, res: Response) => {
                 user: { select: { id: true, name: true, email: true } },
                 post: {
                     where: { isDeleted: false },
-                    include: { media: true, _count: { select: { like: true, comment: true } } },
+                    include: { media: true, _count: { select: { likes: true, comments: true } } },
                     orderBy: { createdAt: 'desc' },
                     take: 5,
                 },
@@ -553,6 +553,12 @@ export const upgradeToCreator = async (req: any, res: Response) => {
 
         if (user.role === 'CREATOR') {
              return res.status(400).json({ message: 'User is already a creator' });
+        }
+
+        // Check wallet balance
+        const wallet = await prisma.wallet.findUnique({ where: { userId } });
+        if (!wallet || wallet.balance < 299) {
+            return res.status(400).json({ message: 'required minimum balance is 299' });
         }
 
         const userRes = await prisma.user.update({

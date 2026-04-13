@@ -173,49 +173,51 @@ export default function PostCard({ post, onSubscribe }: PostCardProps) {
             </div>
 
             {/* Media Section */}
-            <div className={`relative aspect-video border-y border-white/5 flex items-center justify-center overflow-hidden ${post.isLocked ? 'bg-gradient-to-br from-neutral-800 to-black' : 'bg-black'}`}>
-                {post.media.length > 0 && (
-                    post.media[0].type === 'video' ? (
-                        <video
-                            src={getMediaUrl(post.media[0].url)}
-                            controls
-                            className={`w-full h-full object-cover select-none ${post.isLocked ? 'blur-2xl opacity-50' : ''}`}
-                            onContextMenu={(e) => e.preventDefault()}
-                        />
-                    ) : (
-                        <img
-                            src={getMediaUrl(post.media[0].url)}
-                            alt="Content"
-                            draggable={false}
-                            onContextMenu={(e) => e.preventDefault()}
-                            className={`w-full h-full object-cover select-none ${post.isLocked ? 'blur-2xl opacity-50' : ''}`}
-                        />
-                    )
-                )}
+            {(post.media.length > 0 || post.isLocked) && (
+                <div className={`relative aspect-video border-y border-white/5 flex items-center justify-center overflow-hidden ${post.isLocked ? 'bg-gradient-to-br from-neutral-800 to-black' : 'bg-black'}`}>
+                    {post.media.length > 0 && (
+                        post.media[0].type === 'video' ? (
+                            <video
+                                src={getMediaUrl(post.media[0].url)}
+                                controls
+                                className={`w-full h-full object-contain select-none ${post.isLocked ? 'blur-2xl opacity-50' : ''}`}
+                                onContextMenu={(e) => e.preventDefault()}
+                            />
+                        ) : (
+                            <img
+                                src={getMediaUrl(post.media[0].url)}
+                                alt="Content"
+                                draggable={false}
+                                onContextMenu={(e) => e.preventDefault()}
+                                className={`w-full h-full object-contain select-none ${post.isLocked ? 'blur-2xl opacity-50' : ''}`}
+                            />
+                        )
+                    )}
 
-                {post.isLocked && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
-                        <div className="p-5 bg-white/10 rounded-full mb-4">
-                            <Lock size={32} className="text-white" />
+                    {post.isLocked && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
+                            <div className="p-5 bg-white/10 rounded-full mb-4">
+                                <Lock size={32} className="text-white" />
+                            </div>
+                            <h4 className="text-xl font-black text-white mb-2">
+                                {post.type === 'SUBSCRIBER' ? 'Subscriber Only' : 'Unlock Post'}
+                            </h4>
+                            <p className="text-neutral-400 text-sm mb-6 text-center max-w-[200px]">
+                                {post.type === 'SUBSCRIBER'
+                                    ? 'Subscribe to creator to view this content.'
+                                    : 'Unlock this exclusive content'}
+                            </p>
+                            <button
+                                onClick={handleSubscribe}
+                                disabled={loading}
+                                className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-rose-700 hover:scale-105 transition-all shadow-xl shadow-rose-600/20 disabled:opacity-50"
+                            >
+                                {loading ? 'Processing...' : (post.type === 'SUBSCRIBER' ? 'Subscribe Now' : 'Purchase Access')}
+                            </button>
                         </div>
-                        <h4 className="text-xl font-black text-white mb-2">
-                            {post.type === 'SUBSCRIBER' ? 'Subscriber Only' : 'Unlock Post'}
-                        </h4>
-                        <p className="text-neutral-400 text-sm mb-6 text-center max-w-[200px]">
-                            {post.type === 'SUBSCRIBER'
-                                ? 'Subscribe to creator to view this content.'
-                                : 'Unlock this exclusive content'}
-                        </p>
-                        <button
-                            onClick={handleSubscribe}
-                            disabled={loading}
-                            className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-rose-700 hover:scale-105 transition-all shadow-xl shadow-rose-600/20 disabled:opacity-50"
-                        >
-                            {loading ? 'Processing...' : (post.type === 'SUBSCRIBER' ? 'Subscribe Now' : 'Purchase Access')}
-                        </button>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* Post Actions */}
             <div className="p-4 flex items-center justify-between">

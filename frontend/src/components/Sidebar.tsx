@@ -152,8 +152,9 @@ export default function Sidebar({ role }: SidebarProps) {
                                     // Logout and redirect to login to refresh token with new role
                                     localStorage.removeItem('accessToken');
                                     router.push('/login');
-                                } catch (err) {
-                                    alert('Upgrade failed. Please try again.');
+                                } catch (err: any) {
+                                    const errorMessage = err.response?.data?.message || 'Upgrade failed. Please try again.';
+                                    alert(errorMessage);
                                 }
                             }
                         }}

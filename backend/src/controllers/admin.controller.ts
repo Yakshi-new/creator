@@ -227,7 +227,7 @@ export const getPosts = async (req: Request, res: Response) => {
                 },
                 media: true,
                 _count: {
-                    select: { like: true, comment: true }
+                    select: { likes: true, comments: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -277,7 +277,7 @@ export const getCreatorDetail = async (req: Request, res: Response) => {
                     where: { isDeleted: false },
                     take: 5,
                     orderBy: { createdAt: 'desc' },
-                    include: { _count: { select: { like: true, comment: true } } }
+                    include: { _count: { select: { likes: true, comments: true } } }
                 },
                 _count: {
                     select: { subscription: true, post: true }

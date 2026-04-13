@@ -21,6 +21,7 @@ import {
     FileText
 } from 'lucide-react';
 import api from '@/lib/api';
+import { getMediaUrl } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Post {
@@ -149,7 +150,7 @@ function ModerationContent() {
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-rose-500"></div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredPosts.map((post) => (
                             <div key={post.id} className="bg-neutral-900 border border-white/5 rounded-3xl overflow-hidden hover:border-white/10 transition-all group">
                                 <div className="p-6">
@@ -178,19 +179,28 @@ function ModerationContent() {
                                     </p>
 
                                     {post.media && post.media.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-2 mb-6">
-                                            {post.media.slice(0, 2).map((m, idx) => (
-                                                <div key={idx} className="aspect-video rounded-2xl bg-black border border-white/5 overflow-hidden relative">
+                                        <div className="grid grid-cols-4 gap-2 mb-6">
+                                            {post.media.slice(0, 4).map((m, idx) => (
+                                                <div key={idx} className="aspect-square rounded-2xl bg-black border border-white/5 overflow-hidden relative">
                                                     {m.type.startsWith('image') ? (
-                                                        <img src={m.url.startsWith('http') ? m.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/${m.url}`} alt="" className="w-full h-full object-cover" />
+                                                        <img src={getMediaUrl(m.url)} alt="" className="w-full h-full object-contain" />
+                                                    ) : m.type.startsWith('video') ? (
+                                                        <video 
+                                                            src={getMediaUrl(m.url)} 
+                                                            className="w-full h-full object-contain" 
+                                                            muted 
+                                                            playsInline 
+                                                            onMouseEnter={(e) => e.currentTarget.play()}
+                                                            onMouseLeave={(e) => e.currentTarget.pause()}
+                                                        />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                                                            <Video size={24} className="text-neutral-600" />
+                                                            <Video size={18} className="text-neutral-600" />
                                                         </div>
                                                     )}
-                                                    {idx === 1 && post.media.length > 2 && (
-                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-xl">
-                                                            +{post.media.length - 2}
+                                                    {idx === 3 && post.media.length > 4 && (
+                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center font-black text-sm">
+                                                            +{post.media.length - 4}
                                                         </div>
                                                     )}
                                                 </div>
