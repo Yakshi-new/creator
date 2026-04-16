@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { uploadToFirebase } from '../services/storage.service';
 
 export const getPosts = async (req: Request, res: Response) => {
     try {
@@ -37,8 +38,10 @@ export const createPost = async (req: any, res: Response) => {
         const creator = await prisma.creator.findUnique({ where: { userId } });
         if (!creator) return res.status(403).json({ message: 'Only creators can post' });
 
-        // Generate URLs for uploaded files
-        const mediaUrls = files?.map(file => `/uploads/${file.filename}`) || [];
+        // Generate URLs for uploaded files using Firebase Storage
+        const mediaUrls = files ? await Promise.all(
+            files.map(file => uploadToFirebase(file, 'posts'))
+        ) : [];
 
         const post = await prisma.post.create({
             data: {

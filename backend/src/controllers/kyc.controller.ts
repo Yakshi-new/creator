@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { uploadToFirebase } from '../services/storage.service';
 
 export const submitKyc = async (req: any, res: Response) => {
     const userId = req.user.userId;
@@ -18,11 +19,13 @@ export const submitKyc = async (req: any, res: Response) => {
         const creator = await (prisma as any).creator.findUnique({ where: { userId } });
         if (!creator) return res.status(404).json({ message: 'Creator profile not found' });
 
+        const kycUrl = await uploadToFirebase(file, 'kyc');
+
         await (prisma as any).creator.update({
             where: { userId },
             data: {
                 kycStatus: 'PENDING',
-                kycDocument: `/uploads/${file.filename}`,
+                kycDocument: kycUrl,
                 idNumber,
                 panCardNumber,
                 bankAccountNumber,

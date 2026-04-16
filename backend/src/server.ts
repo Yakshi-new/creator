@@ -67,8 +67,9 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT as number, '127.0.0.1', () => {
-    console.log(`Server is running on http://127.0.0.1:${PORT}`);
+server.listen(PORT as number, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
 });
+
 
 export { io, redis };

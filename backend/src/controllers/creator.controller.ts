@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { uploadToFirebase } from '../services/storage.service';
 
 export const getAllCreators = async (req: Request, res: Response) => {
     try {
@@ -511,10 +512,10 @@ export const updateCreatorProfile = async (req: any, res: Response) => {
         if (subscriptionPrice !== undefined) data.subscriptionPrice = Number(subscriptionPrice);
         
         if (files?.avatar?.[0]) {
-            data.avatar = `/uploads/${files.avatar[0].filename}`;
+            data.avatar = await uploadToFirebase(files.avatar[0], 'profiles');
         }
         if (files?.coverImage?.[0]) {
-            data.coverImage = `/uploads/${files.coverImage[0].filename}`;
+            data.coverImage = await uploadToFirebase(files.coverImage[0], 'profiles');
         }
 
         const updatedCreator = await prisma.creator.upsert({
