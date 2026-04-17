@@ -92,8 +92,8 @@ model message {
   isUnlocked                    Boolean  @default(false)
   createdAt                     DateTime @default(now())
   media                         media[]
-  sender   user?  @relation("message_senderIdTouser", fields: [senderId], references: [id])
-  receiver user?  @relation("message_receiverIdTouser", fields: [receiverId], references: [id])
+  sender   user  @relation("message_senderIdTouser", fields: [senderId], references: [id])
+  receiver user  @relation("message_receiverIdTouser", fields: [receiverId], references: [id])
 }
 
 model notification {

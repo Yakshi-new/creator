@@ -25,7 +25,7 @@ export const getConversations = async (req: any, res: Response) => {
         
         messages.forEach(msg => {
             const otherUser = msg.senderId === userId ? msg.receiver : msg.sender;
-            if (!convMap.has(otherUser.id)) {
+            if (otherUser && !convMap.has(otherUser.id)) {
                 convMap.set(otherUser.id, {
                     id: otherUser.id, // Using otherUser.id as conv ID for simplicity
                     fan: { id: otherUser.id, name: otherUser.name },
