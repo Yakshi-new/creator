@@ -103,7 +103,7 @@ export const getAllTransactions = async (req: Request, res: Response) => {
     try {
         const transactions = await prisma.payment.findMany({
             include: {
-                user: {
+                fan: {
                     select: { name: true, email: true }
                 }
             },
@@ -200,7 +200,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     const { userId } = req.params;
     try {
         const user = await prisma.user.update({
-            where: { id: userId },
+            where: { id: String(userId) },
             data: { isDeleted: true }
         });
         res.json({ message: 'User soft-deleted successfully' });
@@ -255,7 +255,7 @@ export const deletePost = async (req: Request, res: Response) => {
     const { postId } = req.params;
     try {
         const post = await prisma.post.update({
-            where: { id: postId },
+            where: { id: String(postId) },
             data: { isDeleted: true }
         });
         res.json({ message: 'Post soft-deleted successfully' });
@@ -268,7 +268,7 @@ export const getCreatorDetail = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const creator = await prisma.creator.findUnique({
-            where: { id },
+            where: { id: String(id) },
             include: {
                 user: {
                     select: { id: true, name: true, email: true, createdAt: true, isActive: true, isVerified: true }

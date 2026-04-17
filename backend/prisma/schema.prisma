@@ -92,8 +92,8 @@ model message {
   isUnlocked                    Boolean  @default(false)
   createdAt                     DateTime @default(now())
   media                         media[]
-  user_message_receiverIdTouser user     @relation("message_receiverIdTouser", fields: [receiverId], references: [id])
-  user_message_senderIdTouser   user     @relation("message_senderIdTouser", fields: [senderId], references: [id])
+  sender   user?  @relation("message_senderIdTouser", fields: [senderId], references: [id])
+  receiver user?  @relation("message_receiverIdTouser", fields: [receiverId], references: [id])
 }
 
 model notification {
@@ -121,7 +121,7 @@ model payment {
   razorpayPaymentId String?
   razorpaySignature String?
   creator           creator?       @relation(fields: [creatorId], references: [id])
-  user              user           @relation(fields: [userId], references: [id])
+  fan               user           @relation(fields: [userId], references: [id])
 }
 
 model post {
@@ -148,7 +148,7 @@ model subscription {
   currentPeriodEnd DateTime
   createdAt        DateTime @default(now())
   creator          creator  @relation(fields: [creatorId], references: [id])
-  user             user     @relation(fields: [fanId], references: [id])
+  fan              user     @relation(fields: [fanId], references: [id])
 
   @@unique([fanId, creatorId])
 }
@@ -161,7 +161,7 @@ model tip {
   message   String?
   createdAt DateTime @default(now())
   creator   creator  @relation(fields: [creatorId], references: [id])
-  user      user     @relation(fields: [fanId], references: [id])
+  fan       user     @relation(fields: [fanId], references: [id])
 }
 
 model user {

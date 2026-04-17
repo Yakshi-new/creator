@@ -424,8 +424,7 @@ export const getCreatorDashboard = async (req: any, res: Response) => {
             })),
             recentTips: recentTips.map(t => ({
                 ...t,
-                // @ts-ignore
-                fan: t.user,
+                fan: t.fan,
             })),
             posts: creator.post,
             revenueByMonth: revenueByMonth,
@@ -452,7 +451,7 @@ export const getCreatorEarnings = async (req: any, res: Response) => {
             prisma.post.aggregate({ where: { creatorId: creator.id, type: 'PAID' }, _sum: { price: true } }),
             prisma.payment.findMany({
                 where: { creatorId: creator.id, status: 'SUCCESS' },
-                include: { user: { select: { name: true } } },
+                include: { fan: { select: { name: true } } },
                 orderBy: { createdAt: 'desc' },
                 take: 50,
             }),
@@ -484,7 +483,7 @@ export const getCreatorEarnings = async (req: any, res: Response) => {
             transactions: allPayments.map(p => ({
                 id: p.id,
                 type: p.type.toLowerCase(),
-                fan: p.user?.name || 'Anonymous',
+                fan: p.fan?.name || 'Anonymous',
                 amount: p.creatorAmount,
                 date: p.createdAt,
                 status: p.status,
