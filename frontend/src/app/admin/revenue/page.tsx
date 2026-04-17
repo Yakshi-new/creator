@@ -21,11 +21,11 @@ export default function AdminRevenue() {
             try {
                 const [statsRes, feeRes] = await Promise.all([
                     api.get('/payment/stats'),
-                    api.get('/settings/PLATFORM_FEE')
+                    api.get('/admin/settings')
                 ]);
                 setData(statsRes.data);
                 if (feeRes.data) {
-                    setPlatformFeePercent(parseFloat(feeRes.data.value));
+                    setPlatformFeePercent(parseFloat((feeRes.data as { value: string }).value));
                 }
             } catch (err) {
                 console.error(err);
@@ -40,7 +40,7 @@ export default function AdminRevenue() {
         if (platformFeePercent < 0 || platformFeePercent > 100) return alert('Invalid percentage');
         setUpdating(true);
         try {
-            await api.post('/settings/update', { key: 'PLATFORM_FEE', value: platformFeePercent });
+            await api.post('/admin/settings', { key: 'PLATFORM_FEE_PERCENTAGE', value: platformFeePercent });
             alert('Platform fee updated successfully!');
         } catch (err) {
             alert('Failed to update fee');

@@ -94,6 +94,10 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="..."
 - Paid content is blurred on the client and restricted by middleware on the server.
 - Rate limiting implemented on all sensitive endpoints (Auth, Payments).
 
+# Automated Tests
+Run npx ts-node src/test-db.ts to confirm MongoDB connection.
+Run npx ts-node src/test-supabase.ts to confirm Supabase connection and bucket existence.
+
 
 <!-- Hii I have just test the admin and creator panel so now their is a big issue when last update is their is only user register data will store in db, but creator post and other information post pricing and all menu will not create db record and also admin has not data fetching from db i want every funcinality work  using db every data gets and store and update in database like register record . -->
 
