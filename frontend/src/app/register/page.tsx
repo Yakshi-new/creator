@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 
-export default function RegisterPage() {
+function RegisterContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     // const initialRole = searchParams.get('role') === 'CREATOR' ? 'CREATOR' : 'FAN';
@@ -85,24 +85,6 @@ export default function RegisterPage() {
                 )}
 
                 <form onSubmit={handleRegister} className="space-y-6">
-                    {/* <div className="grid grid-cols-2 gap-4 mb-6">
-                        <button
-                            type="button"
-                            onClick={() => setRole('FAN')}
-                            className={`py-3 rounded-2xl font-bold text-sm transition-all ${role === 'FAN' ? 'bg-rose-600 text-white' : 'bg-black text-neutral-400 border border-white/5'}`}
-                        >
-                            JOIN AS FAN
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setRole('CREATOR')}
-                            className={`py-3 rounded-2xl font-bold text-sm transition-all ${role === 'CREATOR' ? 'bg-rose-600 text-white' : 'bg-black text-neutral-400 border border-white/5'}`}
-                        >
-                            BECOME CREATOR
-                        </button>
-                    </div> */}
-
-
                     <div>
                         <label className="block text-sm font-bold text-neutral-300 mb-2">Full Name</label>
                         <input
@@ -180,5 +162,17 @@ export default function RegisterPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black flex items-center justify-center font-black text-white">
+                LOADING...
+            </div>
+        }>
+            <RegisterContent />
+        </Suspense>
     );
 }
