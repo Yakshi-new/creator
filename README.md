@@ -97,11 +97,9 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="..."
 # Automated Tests
 Run npx ts-node src/test-db.ts to confirm MongoDB connection.
 Run npx ts-node src/test-supabase.ts to confirm Supabase connection and bucket existence.
-
-
+# vercel frontend url 
+1. https://creator-eight-sepia.vercel.app
+# render backend url 
+https://creator-n3lp.onrender.com/health 
 <!-- Hii I have just test the admin and creator panel so now their is a big issue when last update is their is only user register data will store in db, but creator post and other information post pricing and all menu will not create db record and also admin has not data fetching from db i want every funcinality work  using db every data gets and store and update in database like register record . -->
 
-
-1. Fan panel first update the Home feed page its show public post of all creators subscriber post also in feed 
-2. In fan panel When we open the discover page and click on the view botton duplicate side panel was show on page
-3.  

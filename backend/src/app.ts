@@ -31,20 +31,30 @@ app.use(helmet({
 
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = (process.env.FRONTEND_URL
-            ? process.env.FRONTEND_URL.split(',')
-            : ['http://localhost:3100', 'http://127.0.0.1:3100']).map(o => o.trim());
+        const rawAllowedOrigins = process.env.FRONTEND_URL
+            ? process.env.FRONTEND_URL.split(',').map(o => o.trim())
+            : ['http://localhost:3000', 'http://localhost:3100', 'http://127.0.0.1:3100'];
+            
+        // Explicitly include the user's production domain to guarantee access
+        const productionOrigins = [
+            'https://creator-eight-sepia.vercel.app',
+            'https://creator-eight-sepia.vercel.app/'
+        ];
+
+        const allowedOrigins = [...rawAllowedOrigins, ...productionOrigins];
         
-        console.log(`CORS Check: Origin=${origin}, AllowedOrigins=${JSON.stringify(allowedOrigins)}`);
+        console.log(`[CORS DEBUG] Request Origin: ${origin}`);
         
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some(o => origin.startsWith(o))) {
             callback(null, true);
         } else {
-            console.error(`CORS Blocked: ${origin} not in allowed origins`);
-            callback(new Error('Not allowed by CORS'));
+            console.error(`[CORS ERROR] Rejection: Origin "${origin}" is not in the allowed list.`);
+            callback(null, false);
         }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 }));
 
 app.use(morgan('dev'));

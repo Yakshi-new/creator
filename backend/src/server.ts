@@ -38,13 +38,20 @@ try {
 // Initialize Socket.io
 // Initialize Socket.io
 const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',')
-    : ['http://localhost:3100'];
+    ? process.env.FRONTEND_URL.split(',').map(o => o.trim())
+    : ['http://localhost:3000', 'http://localhost:3100', 'http://127.0.0.1:3100'];
+
+// Explicitly add production domain for consistency
+const productionOrigins = [
+    'https://creator-eight-sepia.vercel.app',
+    'https://creator-eight-sepia.vercel.app/'
+];
+const finalOrigins = [...allowedOrigins, ...productionOrigins];
 
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
-        methods: ['GET', 'POST'],
+        origin: finalOrigins,
+        methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
         credentials: true,
     },
 });
